@@ -245,6 +245,36 @@ def main():
     check("交互链全部通过", bool(m) and int(m.group(2)) == 0,
           "%s pass / %s fail" % (m.group(1), m.group(2)) if m else "无结果")
 
+    print("\n[3b] 导入 DXF 的图层归属（真实源码切片）")
+    # 踩过的坑：appendEntities 原来一律 c.layer=String(activeLayer)，把「导入到图层 N」
+    # 硬改成当前图层 —— 用户选了图层 3，结果全落进图层 1，看着像"点了没反应"。
+    APPEND_STUB = (
+        "let entities = [];\nlet selSet = new Set();\nlet activeLayer = 1;\n"
+        "function pushUndo(){}\nfunction updateSelInfo(){}\nfunction render(){}\n"
+        "function fireChange(){}\nfunction fitView(){}\n"
+    )
+    APPEND_CASES = r"""
+let ok2=0,bad2=0;
+function t2(n,c){ if(c) ok2++; else { bad2++; console.log('  FAIL js: '+n); } }
+const added=appendEntities([{type:'line',p1:[0,0],p2:[1,0],layer:'3'},
+                            {type:'circle',center:[0,0],radius:1}]);
+t2('自带图层的图元保留原图层', added[0].layer==='3');
+t2('没带图层的图元才落到当前图层', added[1].layer==='1');
+t2('appendEntities 返回新加入的图元引用', added.length===2 && added[0]===entities[0]);
+console.log('JS_RESULT2 '+ok2+' '+bad2);
+"""
+    parts2 = [APPEND_STUB,
+              grab(js, "function appendEntities(list)", "/* 选中一批图元"),
+              APPEND_CASES]
+    hz2 = os.path.join(tmp, "harness2.js")
+    open(hz2, "w", encoding="utf-8").write("\n".join(parts2))
+    r2 = subprocess.run(["node", hz2], capture_output=True, text=True)
+    out2 = (r2.stdout or "") + (r2.stderr or "")
+    print(out2.rstrip())
+    m2 = re.search(r"JS_RESULT2 (\d+) (\d+)", out2)
+    check("图层归属测试全部通过", bool(m2) and int(m2.group(2)) == 0,
+          "%s pass / %s fail" % (m2.group(1), m2.group(2)) if m2 else "无结果")
+
     print("\n[4] 静态一致性（调用方传对象 ↔ 函数认对象）")
     check("移动改为快照重算（applyMoveFromBases）",
           "functionapplyMoveFromBases(bases,dx,dy,cfg)" in js.replace(" ", ""))
@@ -262,6 +292,17 @@ def main():
           "elseif(e.type==='polyline'||e.type==='spline'||e.type==='ellipse'||e.type==='arc')"
           in js.replace(" ", ""))
     check("arc 有独立取点函数（无 points 也能画）", "functionarcPoints(e)" in js.replace(" ", ""))
+
+    print("\n[4b] 导入 DXF 的前端接线（别再静默无反应）")
+    flat0 = js.replace(" ", "").replace("\n", "")
+    check("图元自带图层优先（不再被 activeLayer 覆盖）",
+          "c.layer=(e.layer!=null&&String(e.layer)!=='')?String(e.layer):String(activeLayer)"
+          in flat0)
+    check("导入后重新适配视野", "Editor.fitAll()" in flat0)
+    check("导入后选中并高亮所导入图元", "Editor.select(added)" in flat0)
+    check("解析期间禁用「导入」按钮", "goBtn.disabled=true" in flat0)
+    check("没解析结果时给出提示而不是静默 return", "还没有解析结果" in js)
+    check("导入成功同时写 layerHint 与状态栏", "setStatus(msg+" in flat0)
 
     print("\n[5] DWG 导出接线（前端必须真的把 fmt 传上去）")
     flat = js.replace(" ", "").replace("\n", "")

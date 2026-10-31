@@ -1132,9 +1132,10 @@ const Editor = (() => {
     if(e.type==='text') return [e.p];
     return [];
   }
-  function worldBounds(){
+  function worldBounds(list){
+    const src = list || entities;
     let xs=[],ys=[];
-    for(const e of entities){
+    for(const e of src){
       if(e.type==='text'){
         const hpx=Math.max(8,(e.height||5)*view.scale);
         ctx.font=hpx+'px system-ui,"Microsoft YaHei",sans-serif';
@@ -1147,8 +1148,8 @@ const Editor = (() => {
     if(!xs.length) return null;
     return [Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];
   }
-  function fitView(){
-    const b=worldBounds(), W=canvas.width,H=canvas.height;
+  function fitView(list){
+    const b=worldBounds(list), W=canvas.width,H=canvas.height;
     if(!b){view={cx:0,cy:0,scale:10};return;}
     const [x0,y0,x1,y1]=b, pad=30;
     const w=Math.max(x1-x0,1e-3), h=Math.max(y1-y0,1e-3);
@@ -1947,10 +1948,27 @@ const Editor = (() => {
   function appendEntities(list){
     pushUndo();
     const wasEmpty = entities.length === 0;
-    (list||[]).forEach(e=>{ const c={...e}; c.layer=String(activeLayer); entities.push(c); });
+    const added = [];
+    (list||[]).forEach(e=>{
+      const c={...e};
+      // 图元自带图层就尊重它（「导入 DXF 到指定图层」全靠这一条），没有才落到当前图层。
+      // 老写法一律覆盖成 activeLayer，导致选了图层 3 也全落进图层 1，看起来像"点了没反应"。
+      c.layer = (e.layer!=null && String(e.layer)!=='') ? String(e.layer) : String(activeLayer);
+      entities.push(c); added.push(c);
+    });
     if(wasEmpty && entities.length) fitView();
     selSet.clear(); updateSelInfo(); render(); fireChange();
+    return added;
   }
+  /* 选中一批图元（导入后用：高亮告诉用户"东西进来了"） */
+  function select(list){
+    selSet.clear();
+    (list||[]).forEach(e=>{ if(e) selSet.add(e); });
+    updateSelInfo(); render();
+  }
+  /* 把视图重新适配到指定图元（不传就是全部）：导入后必须重排视野，
+     否则图元落在视口外，画布上看着跟没导入一样 */
+  function fitAll(list){ fitView(list); render(); }
   function getEntities(){ return entities.map(e=>({...e})); }
   function setActiveLayer(n){ activeLayer = n|0 || 1; }
   function getActiveLayer(){ return activeLayer; }
@@ -1958,7 +1976,7 @@ const Editor = (() => {
   function clearEntities(){ pushUndo(); entities=[]; selSet.clear(); updateSelInfo(); render(); fireChange(); }
   function show(noScroll){ editCard.style.display='block'; if(!noScroll) editCard.scrollIntoView({behavior:'smooth',block:'nearest'}); requestAnimationFrame(()=>resizeCanvasToDisplay(true)); }
   return {setEntities, appendEntities, getEntities, setActiveLayer,
-          getActiveLayer, setOnChange, clearEntities, show};
+          getActiveLayer, setOnChange, clearEntities, show, select, fitAll};
 })();
 
 function showInEditor(list){ if(list&&list.length){ Editor.appendEntities(list); Editor.show(); revealLayerPanel(); } }
@@ -2093,30 +2111,51 @@ $('#importDxfFile').onchange=async ev=>{
   const f=ev.target.files && ev.target.files[0];
   if(!f){ return; }
   if(!/[.]dxf$/i.test(f.name)){ alert('请选择 .dxf 文件'); ev.target.value=''; return; }
-  $('#importInfo').textContent='正在解析 '+f.name+' …';
+  const goBtn=$('#importGo');
+  pendingImport=null;                      // 新文件从头来，旧结果不能留着
+  goBtn.disabled=true; goBtn.textContent='解析中…';   // 解析没完就点「导入」= 静默无反应，用禁用态堵住
+  $('#importInfo').textContent='正在解析 '+f.name+'（'+Math.max(1,Math.round(f.size/1024))+' KB）…';
   $('#importPanel').style.display='block';
   try{
     const resp=await fetch('/api/import_dxf',{method:'POST',body:f});
     const j=await resp.json();
-    if(!j.ok){ alert('导入失败：'+(j.error||'未知错误')); $('#importPanel').style.display='none'; pendingImport=null; return; }
+    if(!j.ok){ throw new Error(j.error||'未知错误'); }
     pendingImport=j.entities;
     $('#importInfo').textContent='共解析出 '+j.count+' 个图元 — 选择要导入到的图层（默认当前图层 '+Editor.getActiveLayer()+'）：';
     $('#importLayer').value=String(Editor.getActiveLayer());
-  }catch(err){ alert('导入出错：'+err.message); $('#importPanel').style.display='none'; pendingImport=null; }
-  ev.target.value='';
+  }catch(err){
+    alert('导入失败：'+(err.message||err));
+    $('#importPanel').style.display='none'; pendingImport=null;
+  }finally{
+    goBtn.disabled=false; goBtn.textContent='导入';
+    ev.target.value='';
+  }
 };
 $('#importGo').onclick=()=>{
-  if(!pendingImport){ return; }
-  const ln=Math.max(1, parseInt($('#importLayer').value,10)||1);
-  while(maxLayer<ln){ maxLayer++; }
-  pendingImport.forEach(e=>{ e.layer=String(ln); });
-  Editor.appendEntities(pendingImport);
-  Editor.setActiveLayer(ln);
-  Editor.show();
-  renderLayerChips();
-  layerHint.textContent='已从 DXF 导入 '+pendingImport.length+' 个图元到图层 '+ln;
-  pendingImport=null;
-  $('#importPanel').style.display='none';
+  try{
+    if(!pendingImport || !pendingImport.length){
+      $('#importInfo').textContent='还没有解析结果，请先点「📥 导入 DXF」选一个文件';
+      return;
+    }
+    const ln=Math.max(1, parseInt($('#importLayer').value,10)||1);
+    if(ln>maxLayer) maxLayer=ln;            // 目标层比现有层多就自动长出来
+    // 关键：图层必须写进图元再交给编辑器（编辑器只给"没带图层"的图元套当前层）
+    const batch=pendingImport.map(e=>Object.assign({}, e, {layer:String(ln)}));
+    const n=batch.length;
+    Editor.setActiveLayer(ln);
+    const added=Editor.appendEntities(batch);
+    Editor.show();
+    Editor.fitAll();                        // 重新适配视野：否则图元可能落在视口外，看着像没导入
+    Editor.select(added);                   // 高亮选中所导入的图元
+    renderLayerChips();
+    const msg='✅ 已把 '+n+' 个图元导入到图层 '+ln;
+    layerHint.textContent=msg;
+    setStatus(msg+'（已在画布上选中，可直接拖动 / 旋转 / 删除）','ok');
+    pendingImport=null;
+    $('#importPanel').style.display='none';
+  }catch(err){
+    alert('导入出错：'+(err.message||err));
+  }
 };
 $('#importCancel').onclick=()=>{ pendingImport=null; $('#importPanel').style.display='none'; };
 
