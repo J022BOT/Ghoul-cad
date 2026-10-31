@@ -6,6 +6,14 @@ cd /d "%~dp0"
 set "PYTHONHOME="
 set "PYTHONPATH="
 
+REM ---------- same package-local env as the launcher ----------
+REM Without these, a stale user-level OLLAMA_MODELS on the host machine
+REM would show up in this report and look like a broken package.
+set "OLLAMA_MODELS=%~dp0ollama\models"
+set "J022_CAD_DIR=%~dp0CAD"
+set "J022_LIBRECAD=%~dp0LibreCAD\LibreCAD.exe"
+set "J022_OLLAMA_EXE=%~dp0ollama\ollama.exe"
+
 echo ================ environment self-check ================
 echo package root : %~dp0
 echo.

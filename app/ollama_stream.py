@@ -346,7 +346,7 @@ def repair(host: str, models=(), warm: str = "", keep_alive=DEFAULT_KEEP_ALIVE):
             "note": "", "error": ""}
     probe = _http_json(host, "/api/ps", timeout=3.0)
     if not probe:
-        info["error"] = "连不上 Ollama（可能没启动），先双击「启动 Ghoo.bat」把服务拉起来"
+        info["error"] = "连不上 Ollama（可能没启动），先双击「启动 Ghoul.bat」把服务拉起来"
         return info
     info["before"] = [str(m.get("name") or m.get("model"))
                       for m in (probe.get("models") or [])

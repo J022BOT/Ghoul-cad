@@ -61,7 +61,7 @@ flowchart TD
 ## 2. 启动链路
 
 ```
-启动 Ghoo.bat
+启动 Ghoul.bat
    └─ python\python.exe app\launch.py
         ├─ runtime_guard.ensure()      缺 numpy/cv2 就换个解释器重启自己
         ├─ ensure_ollama()             未运行则带 OLLAMA_MODELS 拉起 ollama serve

@@ -12,7 +12,7 @@
 
 ```bat
 cd /d <仓库路径>
-启动 Ghoo.bat
+启动 Ghoul.bat
 ```
 
 最常见的原因是没跑 `一键部署.bat`，`python\python.exe` 不存在。
@@ -43,7 +43,7 @@ powershell -ExecutionPolicy Bypass -File scripts\setup_runtime.ps1 -Only python
 3. 显式指定：
    ```bat
    set J022_PYTHON=D:\ghoul-cad\python\python.exe
-   启动 Ghoo.bat
+   启动 Ghoul.bat
    ```
 
 网页顶部也会出现红色横幅说明当前用的是哪个解释器。
@@ -67,7 +67,7 @@ taskkill /PID <上面查到的PID> /F
 ```powershell
 taskkill /F /IM ollama.exe
 taskkill /F /IM "ollama app.exe"
-启动 Ghoo.bat
+启动 Ghoul.bat
 ```
 
 ---

@@ -2075,7 +2075,7 @@ Editor.setOnChange(renderLayerChips);
     box.innerHTML = '<b>⚠ 图片识别不可用</b>：当前 Python 解释器缺少 <code>'
       + miss.join('</code> <code>') + '</code>。'
       + '<br>正在使用：<code>' + (r.python || '未知') + '</code>'
-      + '<br>解决办法：关闭本页，改用包内 <b>启动 Ghoo.bat</b> 启动（会自动使用自带 Python）；'
+      + '<br>解决办法：关闭本页，改用包内 <b>启动 Ghoul.bat</b> 启动（会自动使用自带 Python）；'
       + '或在命令行执行 <code>python -m pip install numpy opencv-python</code>';
     const x = document.createElement('button');
     x.className = 'x'; x.type = 'button'; x.textContent = '✕'; x.title = '关闭';

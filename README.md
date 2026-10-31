@@ -84,7 +84,7 @@ powershell -ExecutionPolicy Bypass -File scripts\setup_runtime.ps1 -SkipModels
 
 ### 3. 启动
 
-双击 **`启动 Ghoo.bat`**。它依次：拉起 Ollama → 放出桌宠 → 启动网页工作台 → 自动开浏览器。
+双击 **`启动 Ghoul.bat`**。它依次：拉起 Ollama → 放出桌宠 → 启动网页工作台 → 自动开浏览器。
 
 浏览器打开 <http://127.0.0.1:8765>，左栏是 AI 对话，右栏是"指令/草图 → DXF"，
 下面是 CAD 编辑工作台。
@@ -149,7 +149,7 @@ flowchart LR
 ```
 ghoul-cad/
 ├─ 一键部署.bat            ← 装运行时
-├─ 启动 Ghoo.bat           ← 一键启动（服务 + 桌宠 + 浏览器）
+├─ 启动 Ghoul.bat           ← 一键启动（服务 + 桌宠 + 浏览器）
 ├─ 只启动桌宠.bat
 ├─ 关闭运行.bat            ← 收尾：结束进程、刷缓存、安全弹出
 ├─ 诊断环境.bat            ← 逐项打印路径/版本
