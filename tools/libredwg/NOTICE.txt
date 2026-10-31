@@ -1,0 +1,9 @@
+LibreDWG (dxf2dwg.exe / dwg2dxf.exe / libredwg-0.dll)
+------------------------------------------------------
+版本 0.14.8654 (win64 官方构建)
+来源 https://github.com/LibreDWG/libredwg/releases
+许可 GNU General Public License v3.0 或更新版本 (GPL-3.0-or-later)
+
+本目录只用于 DXF ↔ DWG 格式转换（离线）。J022 Ghoul 通过子进程调用
+dxf2dwg.exe 把本工具写出的 DXF 转成 DWG，不修改也不链接本程序。
+完整源码与许可证见上述仓库地址。

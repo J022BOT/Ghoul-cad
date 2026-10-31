@@ -1,0 +1,55 @@
+# ------------------------------------------------
+#  运行时（由 scripts/setup_runtime.ps1 下载，不进版本库）
+# ------------------------------------------------
+/python/
+/ollama/
+/LibreCAD/
+/tools/node/
+# LibreDWG：只保留许可文本，二进制由部署脚本下载
+/tools/libredwg/*.exe
+/tools/libredwg/*.dll
+/tools/odafc/
+/tools/homotope/node_modules/
+/tools/homotope/package-lock.json
+
+# ------------------------------------------------
+#  生成物 / 临时文件
+# ------------------------------------------------
+/CAD/*
+!/CAD/.gitkeep
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.log
+*.tmp
+*.bak
+_sketches/
+_wheels/
+_repro/
+_debug/
+DOWNLOADS/
+
+# ------------------------------------------------
+#  本地配置 / 隐私
+# ------------------------------------------------
+.env
+*.env
+app/voice_config.local.json
+server_stdout.log
+server_stderr.log
+
+# ------------------------------------------------
+#  编辑器 / 系统
+# ------------------------------------------------
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ------------------------------------------------
+#  Git 内部（如果本目录被当成便携包根用时）
+# ------------------------------------------------
+/ghoul-cad.zip
