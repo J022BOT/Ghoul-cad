@@ -44,9 +44,12 @@ OpenCV 负责"量准"，确定性几何库负责"画对"，最后统一落到 DX
 ### 1. 拿代码
 
 ```bat
-git clone https://github.com/<你的用户名>/ghoul-cad.git
-cd ghoul-cad
+git clone https://github.com/J022BOT/Ghoul-cad.git
+cd Ghoul-cad
 ```
+
+> 如果你的网络访问 github.com 的 443 端口不稳定，改用 SSH 更可靠：
+> `git clone git@github.com:J022BOT/Ghoul-cad.git`
 
 > 路径**不要带空格**（LibreCAD 的静默安装不支持）。
 
